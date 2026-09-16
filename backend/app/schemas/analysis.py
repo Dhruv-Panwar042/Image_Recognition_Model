@@ -26,6 +26,7 @@ class DetectionResponse(BaseModel):
     image_height: int = Field(..., description="Original image height in pixels")
     class_counts: Dict[str, int] = Field(..., description="Frequency count per object class")
     detections: List[BoundingBox] = Field(default_factory=list, description="List of detected bounding boxes")
+    annotated_image_base64: Optional[str] = Field(None, description="Base64 encoded JPEG with annotated bounding boxes")
     metrics: PerformanceMetrics
 
 

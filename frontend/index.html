@@ -673,17 +673,77 @@
       lucide.createIcons();
     }
 
-    function handleFileSelect(e) {
+    function showToast(msg, type = 'info') {
+      let toast = document.getElementById('app-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        document.body.appendChild(toast);
+      }
+      toast.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center space-x-2 transition-all duration-300 ${
+        type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white'
+      }`;
+      toast.innerText = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { if (toast) toast.style.opacity = '0'; }, 5000);
+    }
+
+    function compressImage(file, maxDimension = 800, quality = 0.85) {
+      return new Promise((resolve) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          resolve(file);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const compressed = new File([blob], file.name || 'image.jpg', { type: 'image/jpeg' });
+                resolve(compressed);
+              } else {
+                resolve(file);
+              }
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = () => resolve(file);
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
-      currentFile = file;
 
-      // Show original preview
+      // Show immediate preview
       const reader = new FileReader();
       reader.onload = (evt) => {
         document.getElementById('preview-original').src = evt.target.result;
       };
       reader.readAsDataURL(file);
+
+      // Client-side downscaling to ensure sub-second inference on free cloud CPU
+      currentFile = await compressImage(file, 800, 0.85);
 
       triggerDetection();
     }
@@ -698,12 +758,19 @@
       const formData = new FormData();
       formData.append('file', currentFile);
       formData.append('confidence_threshold', conf);
+      formData.append('include_annotated', 'true');
       if (filter.trim()) formData.append('filter_classes', filter.trim());
 
       try {
-        // 1. Fetch detection JSON
+        // Fetch detection JSON with bundled annotated base64 image (single roundtrip)
         const res = await fetch(`${backendUrl}/api/v1/detect`, { method: 'POST', body: formData });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const errText = await res.text();
+          if (res.status === 502 || errText.includes('502') || errText.includes('<!DOCTYPE')) {
+            throw new Error('Cloud instance is waking up from standby. Please retry in 5 seconds.');
+          }
+          throw new Error(errText);
+        }
         currentDetectionData = await res.json();
 
         // Update KPIs
@@ -719,14 +786,23 @@
         // Render Table
         renderDetectionTable(currentDetectionData.detections);
 
-        // 2. Fetch Annotated Image
-        const imgRes = await fetch(`${backendUrl}/api/v1/annotated-image`, { method: 'POST', body: formData });
-        if (imgRes.ok) {
-          const blob = await imgRes.blob();
-          document.getElementById('preview-annotated').src = URL.createObjectURL(blob);
+        // Render Annotated Image directly from in-memory base64 (zero extra roundtrip)
+        if (currentDetectionData.annotated_image_base64) {
+          document.getElementById('preview-annotated').src = `data:image/jpeg;base64,${currentDetectionData.annotated_image_base64}`;
+        } else {
+          const imgRes = await fetch(`${backendUrl}/api/v1/annotated-image`, { method: 'POST', body: formData });
+          if (imgRes.ok) {
+            const blob = await imgRes.blob();
+            document.getElementById('preview-annotated').src = URL.createObjectURL(blob);
+          }
         }
+
+        // Lazy-sync spatial tab if active
+        if (currentTab === 'heatmap') loadHeatmap();
+        if (currentTab === 'distances') loadDistances();
+
       } catch (err) {
-        alert(`Error: ${err.message}`);
+        showToast(err.message, 'error');
       } finally {
         document.getElementById('annotated-spinner').classList.add('hidden');
         lucide.createIcons();
@@ -831,10 +907,17 @@
           const data = await res.json();
           box.innerHTML = `<p class="font-sans leading-relaxed text-slate-800">${data.description.replace(/\n/g, '<br/>')}</p>`;
         } else {
-          box.innerText = `Error: ${await res.text()}`;
+          const errText = await res.text();
+          const cleanErr = (res.status === 502 || errText.includes('502') || errText.includes('<!DOCTYPE'))
+            ? 'Cloud service is warming up. Please retry in a few seconds.'
+            : errText;
+          box.innerHTML = `<span class="text-rose-600 font-medium">${cleanErr}</span>`;
         }
       } catch (err) {
-        box.innerText = `Error: ${err.message}`;
+        const cleanErr = (err.message.includes('502') || err.message.includes('<!DOCTYPE'))
+          ? 'Cloud service is warming up. Please retry in a few seconds.'
+          : err.message;
+        box.innerHTML = `<span class="text-rose-600 font-medium">${cleanErr}</span>`;
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="play" class="h-3.5 w-3.5"></i><span>Analyze Scene</span>`;
@@ -878,9 +961,18 @@
               </div>
             </div>
           `;
+        } else {
+          const errText = await res.text();
+          const cleanErr = (res.status === 502 || errText.includes('502') || errText.includes('<!DOCTYPE'))
+            ? 'Cloud service is warming up. Please retry in a few seconds.'
+            : errText;
+          container.innerHTML = `<div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">${cleanErr}</div>`;
         }
       } catch (err) {
-        container.innerText = `Error: ${err.message}`;
+        const cleanErr = (err.message.includes('502') || err.message.includes('<!DOCTYPE'))
+          ? 'Cloud service is warming up. Please retry in a few seconds.'
+          : err.message;
+        container.innerHTML = `<div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">${cleanErr}</div>`;
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="play" class="h-3.5 w-3.5"></i><span>Run Safety Audit</span>`;
@@ -907,9 +999,18 @@
         if (res.ok) {
           const data = await res.json();
           box.innerHTML = `<p class="font-sans leading-relaxed text-slate-800"><b>A:</b> ${data.answer}</p>`;
+        } else {
+          const errText = await res.text();
+          const cleanErr = (res.status === 502 || errText.includes('502') || errText.includes('<!DOCTYPE'))
+            ? 'Cloud service is warming up. Please retry in a few seconds.'
+            : errText;
+          box.innerHTML = `<span class="text-rose-600 font-medium">${cleanErr}</span>`;
         }
       } catch (e) {
-        box.innerText = `Error: ${e.message}`;
+        const cleanErr = (e.message.includes('502') || e.message.includes('<!DOCTYPE'))
+          ? 'Cloud service is warming up. Please retry in a few seconds.'
+          : e.message;
+        box.innerHTML = `<span class="text-rose-600 font-medium">${cleanErr}</span>`;
       } finally {
         btn.disabled = false;
         lucide.createIcons();

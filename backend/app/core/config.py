@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     
     # YOLO Settings (checks local folder or standard weights)
     YOLO_MODEL_PATH: str = os.getenv("YOLO_MODEL_PATH", "yolov8n.pt")
+    YOLO_IMG_SIZE: int = int(os.getenv("YOLO_IMG_SIZE", "416"))
     DEFAULT_CONFIDENCE: float = 0.25
     
     # CORS

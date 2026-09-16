@@ -54,8 +54,8 @@ class YOLOService:
         """
         start_time = time.perf_counter()
         
-        # Run inference
-        results = self.model(image, verbose=False)
+        # Run inference with optimized dimension for sub-second CPU latency
+        results = self.model(image, imgsz=settings.YOLO_IMG_SIZE, verbose=False)
         raw_result = results[0]
         
         # Prepare filter list if specified

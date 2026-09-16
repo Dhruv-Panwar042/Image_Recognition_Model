@@ -1,4 +1,5 @@
 import io
+import base64
 import time
 from typing import List, Optional
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Query
@@ -52,13 +53,19 @@ def detect_objects(
     file: UploadFile = File(..., description="Image to analyze"),
     confidence_threshold: float = Form(0.25, ge=0.05, le=0.95),
     filter_classes: Optional[str] = Form(None, description="Comma-separated class names to filter (e.g. 'person,car')"),
+    include_annotated: bool = Form(True, description="Whether to include base64 annotated image in response"),
 ):
     """
     Runs YOLOv8 object detection on an uploaded image with performance latency breakdown.
+    Directly attaches rendered annotated JPEG in base64 to eliminate extra network roundtrips.
     """
     image = _read_image(file)
     allowed = _parse_filter_classes(filter_classes)
     detection, _ = yolo_service.run_detection(image, confidence_threshold, allowed)
+    if include_annotated:
+        annotated = cv_service.draw_bounding_boxes(image, detection.detections)
+        img_bytes = cv_service.image_to_bytes(annotated, format="JPEG")
+        detection.annotated_image_base64 = base64.b64encode(img_bytes).decode("utf-8")
     return detection
 
 
