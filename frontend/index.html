@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VisionMind AI — Intelligent Image Analysis Platform</title>
+  
+  <!-- Fonts & Tailwind CSS CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .card-base {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+    }
+    .card-base:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .tab-btn.active {
+      background-color: #4f46e5;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white bg-slate-50">
+
+  <!-- ── Navigation Header ──────────────────────────────────────── -->
+  <header class="h-16 border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-6 shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-brand-600 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+        <i data-lucide="scan" class="h-5 w-5 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold tracking-tight text-slate-900 text-lg">VisionMind<span class="text-indigo-600">.ai</span></span>
+          <span class="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold tracking-wider">FastAPI v2.0</span>
+        </div>
+        <p class="text-[11px] text-slate-500 hidden sm:block font-medium">Real-time YOLOv8 Computer Vision & Multimodal Gemini Intelligence</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- Status pill -->
+      <div id="backend-status-pill" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
+        <span id="status-dot" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="status-text">Connecting to API...</span>
+      </div>
+
+      <!-- Swagger / Docs link -->
+      <a href="/docs" target="_blank" class="hidden md:flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 border border-indigo-200 transition">
+        <i data-lucide="book-open" class="h-3.5 w-3.5 text-indigo-600"></i>
+        <span>API Docs (/docs)</span>
+      </a>
+
+      <!-- GitHub Link -->
+      <a href="https://github.com/Dhruv-Panwar042" target="_blank" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+        <i data-lucide="github" class="h-4 w-4"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Main Workspace ─────────────────────────────────────────── -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- ── Left Control Sidebar ───────────────────────────────────── -->
+    <aside class="w-80 border-r border-slate-200 bg-white flex flex-col p-5 space-y-6 overflow-y-auto shrink-0 shadow-sm">
+      
+      <!-- Mode Selection -->
+      <div>
+        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2.5 block">Analysis Mode</label>
+        <div class="grid grid-cols-1 gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+          <button onclick="setMode('single')" id="mode-btn-single" class="mode-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 shadow-sm transition">
+            <i data-lucide="image" class="h-4 w-4"></i>
+            <span>Single Image Analysis</span>
+          </button>
+          <button onclick="setMode('batch')" id="mode-btn-batch" class="mode-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition">
+            <i data-lucide="layers" class="h-4 w-4"></i>
+            <span>Batch Processing</span>
+          </button>
+          <button onclick="setMode('compare')" id="mode-btn-compare" class="mode-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition">
+            <i data-lucide="git-compare" class="h-4 w-4"></i>
+            <span>Image Comparison</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confidence Threshold Slider -->
+      <div class="space-y-2.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Confidence Threshold</span>
+          <span id="conf-val" class="font-mono text-indigo-700 font-bold bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200">0.25</span>
+        </div>
+        <input id="conf-slider" type="range" min="0.05" max="0.95" step="0.05" value="0.25" oninput="updateConfidence(this.value)"
+               class="w-full accent-indigo-600 cursor-pointer bg-slate-200 rounded-lg h-2">
+        <div class="flex justify-between text-[10px] text-slate-500 font-mono font-medium">
+          <span>0.05 (Recall)</span>
+          <span>0.95 (Precision)</span>
+        </div>
+      </div>
+
+      <!-- Target Class Filter -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Filter Target Classes</span>
+          <button onclick="clearClassFilters()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold transition">Clear All</button>
+        </div>
+        <input id="class-filter-input" type="text" placeholder="e.g. person, car, dog" 
+               class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 font-mono transition">
+        
+        <!-- Quick Chips with vibrant soft colors -->
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          <button onclick="addClassChip('person')" class="px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 hover:bg-blue-100 text-[11px] font-medium text-blue-700 transition">+ person</button>
+          <button onclick="addClassChip('car')" class="px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 hover:bg-amber-100 text-[11px] font-medium text-amber-700 transition">+ car</button>
+          <button onclick="addClassChip('bottle')" class="px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-[11px] font-medium text-emerald-700 transition">+ bottle</button>
+          <button onclick="addClassChip('chair')" class="px-2.5 py-1 rounded-md bg-purple-50 border border-purple-200 hover:bg-purple-100 text-[11px] font-medium text-purple-700 transition">+ chair</button>
+        </div>
+      </div>
+
+      <!-- Backend Endpoint Config -->
+      <div class="pt-4 border-t border-slate-200 space-y-2">
+        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Backend Server</label>
+        <input id="backend-url-input" type="text" value="http://127.0.0.1:8000" onchange="updateBackendUrl(this.value)"
+               class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+        <p class="text-[11px] text-slate-500 leading-tight">Decoupled REST API communication over HTTP JSON.</p>
+      </div>
+
+      <!-- Architecture Stack Card -->
+      <div class="mt-auto p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 to-purple-50/70 border border-indigo-100 text-xs text-slate-600 space-y-1.5">
+        <div class="flex items-center space-x-2 text-indigo-900 font-bold">
+          <i data-lucide="layers" class="h-4 w-4 text-indigo-600"></i>
+          <span>Decoupled Microservice</span>
+        </div>
+        <p class="text-[11px] text-slate-600 leading-relaxed">FastAPI · YOLOv8n · Gemini 2.5 Flash · OpenCV · ReportLab</p>
+      </div>
+
+    </aside>
+
+    <!-- ── Right Dynamic Content Area ─────────────────────────────── -->
+    <main class="flex-1 overflow-y-auto p-8 space-y-7 bg-slate-50/60">
+
+      <!-- ══════════════════ MODE 1: SINGLE IMAGE ══════════════════ -->
+      <div id="view-single" class="space-y-6 max-w-7xl mx-auto">
+
+        <!-- Upload Dropzone -->
+        <div id="drop-area" class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 rounded-2xl p-8 text-center transition cursor-pointer bg-white hover:bg-indigo-50/40 shadow-sm group relative">
+          <input type="file" id="file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
+          <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+            <div class="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition duration-300 shadow-sm">
+              <i data-lucide="upload-cloud" class="h-7 w-7"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Click or drag & drop an image here</p>
+              <p class="text-xs text-slate-500 mt-1">Supports PNG, JPG, JPEG up to 20MB for real-time analysis</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Metrics Row (Vibrant Colors) -->
+        <div id="kpi-metrics-row" class="grid grid-cols-2 sm:grid-cols-5 gap-3.5 hidden">
+          <!-- KPI 1: Objects (Blue) -->
+          <div class="card-base rounded-xl p-4 border-l-4 border-l-blue-500 bg-gradient-to-br from-white to-blue-50/30">
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Objects Detected</p>
+            <p id="kpi-total-objects" class="text-2xl font-extrabold font-mono text-blue-600 mt-1">0</p>
+          </div>
+          <!-- KPI 2: Classes (Purple) -->
+          <div class="card-base rounded-xl p-4 border-l-4 border-l-purple-500 bg-gradient-to-br from-white to-purple-50/30">
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Unique Classes</p>
+            <p id="kpi-unique-classes" class="text-2xl font-extrabold font-mono text-purple-600 mt-1">0</p>
+          </div>
+          <!-- KPI 3: Avg Confidence (Emerald) -->
+          <div class="card-base rounded-xl p-4 border-l-4 border-l-emerald-500 bg-gradient-to-br from-white to-emerald-50/30">
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Avg Confidence</p>
+            <p id="kpi-avg-conf" class="text-2xl font-extrabold font-mono text-emerald-600 mt-1">0%</p>
+          </div>
+          <!-- KPI 4: Inference Latency (Amber) -->
+          <div class="card-base rounded-xl p-4 border-l-4 border-l-amber-500 bg-gradient-to-br from-white to-amber-50/30">
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Inference Latency</p>
+            <p id="kpi-inference-ms" class="text-2xl font-extrabold font-mono text-amber-600 mt-1">0ms</p>
+          </div>
+          <!-- KPI 5: Total SLA (Indigo) -->
+          <div class="card-base rounded-xl p-4 border-l-4 border-l-indigo-500 bg-gradient-to-br from-white to-indigo-50/30">
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">End-to-End SLA</p>
+            <p id="kpi-total-ms" class="text-2xl font-extrabold font-mono text-indigo-600 mt-1">0ms</p>
+          </div>
+        </div>
+
+        <!-- Analysis Tabs Header -->
+        <div id="tabs-container" class="hidden space-y-6">
+          <div class="flex items-center space-x-2 border-b border-slate-200 pb-3 overflow-x-auto">
+            <button onclick="switchTab('detection')" id="tab-btn-detection" class="tab-btn active px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2">
+              <i data-lucide="crosshair" class="h-4 w-4"></i>
+              <span>Detection</span>
+            </button>
+            <button onclick="switchTab('heatmap')" id="tab-btn-heatmap" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="flame" class="h-4 w-4 text-rose-500"></i>
+              <span>Heatmap</span>
+            </button>
+            <button onclick="switchTab('distances')" id="tab-btn-distances" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="ruler" class="h-4 w-4 text-purple-500"></i>
+              <span>Spatial Distances</span>
+            </button>
+            <button onclick="switchTab('scene')" id="tab-btn-scene" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="sparkles" class="h-4 w-4 text-amber-500"></i>
+              <span>Scene Analysis</span>
+            </button>
+            <button onclick="switchTab('risk')" id="tab-btn-risk" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="shield-alert" class="h-4 w-4 text-red-500"></i>
+              <span>Risk Assessment</span>
+            </button>
+            <button onclick="switchTab('qa')" id="tab-btn-qa" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="message-square" class="h-4 w-4 text-blue-500"></i>
+              <span>Visual Q&A</span>
+            </button>
+            <button onclick="switchTab('export')" id="tab-btn-export" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50/80 transition flex items-center space-x-2">
+              <i data-lucide="download" class="h-4 w-4 text-emerald-600"></i>
+              <span>Export (PDF/JSON)</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: Detection View -->
+          <div id="tab-panel-detection" class="tab-panel space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="card-base rounded-2xl p-5 space-y-3 bg-white">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center space-x-2">
+                  <i data-lucide="image" class="h-4 w-4 text-slate-500"></i>
+                  <span>Original Image</span>
+                </span>
+                <div class="rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center min-h-[320px]">
+                  <img id="preview-original" class="max-h-[460px] w-auto object-contain rounded-lg">
+                </div>
+              </div>
+
+              <div class="card-base rounded-2xl p-5 space-y-3 bg-white">
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center space-x-2">
+                  <i data-lucide="crosshair" class="h-4 w-4 text-indigo-600"></i>
+                  <span>YOLOv8 Bounding Box Detections</span>
+                </span>
+                <div class="rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center min-h-[320px] relative">
+                  <img id="preview-annotated" class="max-h-[460px] w-auto object-contain rounded-lg">
+                  <div id="annotated-spinner" class="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center hidden">
+                    <i data-lucide="loader-2" class="h-8 w-8 text-indigo-600 animate-spin"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detection Details Table -->
+            <div class="card-base rounded-2xl p-6 space-y-3 bg-white">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center space-x-2">
+                  <i data-lucide="database" class="h-4 w-4 text-indigo-600"></i>
+                  <span>Detection Audit Records</span>
+                </span>
+                <span id="detection-count-pill" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">0 items</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-700">
+                  <thead class="text-[11px] uppercase bg-slate-50 text-slate-600 border-b border-slate-200 font-bold">
+                    <tr>
+                      <th class="py-3 px-4">Class</th>
+                      <th class="py-3 px-4">Confidence</th>
+                      <th class="py-3 px-4">Coordinates [X1, Y1, X2, Y2]</th>
+                      <th class="py-3 px-4">Centroid [CX, CY]</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detection-table-body" class="divide-y divide-slate-100 font-mono">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: Heatmap View -->
+          <div id="tab-panel-heatmap" class="tab-panel space-y-4 hidden">
+            <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <i data-lucide="flame" class="h-4 w-4 text-rose-500"></i>
+                  <span>Confidence-Weighted Density Heatmap</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">Generated via 2D confidence accumulation, Gaussian blur (k=51), and OpenCV JET colormapping.</p>
+              </div>
+              <div class="rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center min-h-[350px]">
+                <img id="preview-heatmap" class="max-h-[500px] w-auto object-contain rounded-lg">
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Distances View -->
+          <div id="tab-panel-distances" class="tab-panel space-y-4 hidden">
+            <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <i data-lucide="ruler" class="h-4 w-4 text-purple-600"></i>
+                  <span>Relative Spatial Proximity Geometry</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">Computes normalized 2D Euclidean distances between detected bounding box centroids.</p>
+              </div>
+              <div id="distances-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Scene Understanding View -->
+          <div id="tab-panel-scene" class="tab-panel space-y-4 hidden">
+            <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <i data-lucide="sparkles" class="h-4 w-4 text-amber-500"></i>
+                    <span>Multimodal Scene Understanding</span>
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-1">Powered by Google Gemini 2.5 Flash Vision reasoning.</p>
+                </div>
+                <button onclick="fetchSceneDescription()" id="btn-gen-scene" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white shadow-sm transition flex items-center space-x-1.5">
+                  <i data-lucide="play" class="h-3.5 w-3.5"></i>
+                  <span>Analyze Scene</span>
+                </button>
+              </div>
+              <div id="scene-desc-content" class="p-5 rounded-xl bg-slate-50 border border-slate-200 text-sm leading-relaxed text-slate-800 min-h-[100px]">
+                Click "Analyze Scene" to invoke the Gemini vision multimodal reasoning pipeline.
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: Risk Assessment View -->
+          <div id="tab-panel-risk" class="tab-panel space-y-4 hidden">
+            <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="h-4 w-4 text-rose-600"></i>
+                    <span>Public Safety & Hazard Evaluation</span>
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-1">Structured compliance and safety risk assessment.</p>
+                </div>
+                <button onclick="fetchRiskAssessment()" id="btn-gen-risk" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white shadow-sm transition flex items-center space-x-1.5">
+                  <i data-lucide="play" class="h-3.5 w-3.5"></i>
+                  <span>Run Safety Audit</span>
+                </button>
+              </div>
+              <div id="risk-content" class="space-y-4">
+                <div class="p-5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+                  Click "Run Safety Audit" to evaluate environmental safety risks.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: Visual Q&A View -->
+          <div id="tab-panel-qa" class="tab-panel space-y-4 hidden">
+            <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                  <i data-lucide="message-square" class="h-4 w-4 text-blue-600"></i>
+                  <span>Grounded Visual Question Answering</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">Ask questions directly grounded in the visual evidence of your image.</p>
+              </div>
+
+              <div class="flex space-x-2">
+                <input id="qa-input" type="text" placeholder="e.g. How many vehicles are on the road? Are pedestrians safe?"
+                       class="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition shadow-sm">
+                <button onclick="submitQA()" id="btn-submit-qa" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white shadow-sm transition flex items-center space-x-1.5">
+                  <i data-lucide="send" class="h-3.5 w-3.5"></i>
+                  <span>Ask Question</span>
+                </button>
+              </div>
+
+              <div id="qa-answer-box" class="p-5 rounded-xl bg-indigo-50/50 border border-indigo-100 text-sm text-slate-800 min-h-[80px] hidden shadow-sm">
+                <!-- Answer here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 7: Dual Export View -->
+          <div id="tab-panel-export" class="tab-panel space-y-4 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="card-base rounded-2xl p-6 space-y-3.5 bg-white">
+                <div class="h-11 w-11 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center">
+                  <i data-lucide="file-text" class="h-5 w-5"></i>
+                </div>
+                <h4 class="text-sm font-bold text-slate-900">Executive PDF Report</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">Download a formal PDF document generated programmatically via ReportLab with tables, annotated images, and safety recommendations.</p>
+                <button onclick="downloadPDF()" class="mt-2 w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white shadow-sm transition flex items-center justify-center space-x-2">
+                  <i data-lucide="download" class="h-4 w-4"></i>
+                  <span>Download Executive PDF</span>
+                </button>
+              </div>
+
+              <div class="card-base rounded-2xl p-6 space-y-3.5 bg-white">
+                <div class="h-11 w-11 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+                  <i data-lucide="database" class="h-5 w-5"></i>
+                </div>
+                <h4 class="text-sm font-bold text-slate-900">Standardized JSON Schema</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">Export raw structured JSON containing all detection bounding boxes, centroids, SLA metrics, and Gemini insights for downstream microservices.</p>
+                <button onclick="downloadJSON()" class="mt-2 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition flex items-center justify-center space-x-2">
+                  <i data-lucide="file-code" class="h-4 w-4"></i>
+                  <span>Download JSON Audit Schema</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══════════════════ MODE 2: BATCH PROCESSING ══════════════ -->
+      <div id="view-batch" class="space-y-6 hidden max-w-7xl mx-auto">
+        <div class="card-base rounded-2xl p-6 space-y-4 bg-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Batch Image Ingestion Pipeline</h3>
+              <p class="text-xs text-slate-500 mt-1">Upload multiple images to process sequential object detection with aggregated SLA metrics.</p>
+            </div>
+          </div>
+
+          <div class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 rounded-xl p-8 text-center transition cursor-pointer relative bg-slate-50/60">
+            <input type="file" id="batch-file-input" multiple accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleBatchSelect(event)">
+            <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+              <i data-lucide="layers" class="h-8 w-8 text-indigo-600"></i>
+              <p class="text-xs font-bold text-slate-800">Select multiple images for batch analysis</p>
+              <p id="batch-count-text" class="text-[11px] text-slate-500 font-mono">0 files selected</p>
+            </div>
+          </div>
+
+          <button onclick="executeBatchDetection()" id="btn-batch-run" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white shadow-sm transition flex items-center justify-center space-x-2">
+            <i data-lucide="play" class="h-4 w-4"></i>
+            <span>Execute Batch Inference</span>
+          </button>
+
+          <div id="batch-results-container" class="hidden space-y-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800 uppercase tracking-wider">Batch Results Summary</span>
+              <span id="batch-summary-time" class="font-mono text-indigo-700 font-bold bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200">0ms total</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="text-[11px] uppercase bg-slate-50 text-slate-600 border-b border-slate-200 font-mono font-bold">
+                  <tr>
+                    <th class="py-3 px-4">Filename</th>
+                    <th class="py-3 px-4">Objects Found</th>
+                    <th class="py-3 px-4">Unique Classes</th>
+                    <th class="py-3 px-4">Avg Confidence</th>
+                    <th class="py-3 px-4">Inference Latency</th>
+                  </tr>
+                </thead>
+                <tbody id="batch-table-body" class="divide-y divide-slate-100 font-mono">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════ MODE 3: IMAGE COMPARISON ══════════════ -->
+      <div id="view-compare" class="space-y-6 hidden max-w-7xl mx-auto">
+        <div class="card-base rounded-2xl p-6 space-y-6 bg-white">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Differential Scene Comparison</h3>
+            <p class="text-xs text-slate-500 mt-1">Upload two scenes to compute frequency deltas and track object appearance/disappearance.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="border-2 border-dashed border-indigo-200 rounded-xl p-6 text-center relative bg-slate-50/60">
+              <input type="file" id="comp-file-1" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewComp(event, 'comp-img-1')">
+              <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                <i data-lucide="image" class="h-6 w-6 text-slate-400"></i>
+                <p class="text-xs font-bold text-slate-800">Baseline Image 1</p>
+              </div>
+              <img id="comp-img-1" class="mt-3 max-h-48 mx-auto rounded-lg border border-slate-200 hidden">
+            </div>
+
+            <div class="border-2 border-dashed border-indigo-200 rounded-xl p-6 text-center relative bg-slate-50/60">
+              <input type="file" id="comp-file-2" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewComp(event, 'comp-img-2')">
+              <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                <i data-lucide="image" class="h-6 w-6 text-slate-400"></i>
+                <p class="text-xs font-bold text-slate-800">Comparison Image 2</p>
+              </div>
+              <img id="comp-img-2" class="mt-3 max-h-48 mx-auto rounded-lg border border-slate-200 hidden">
+            </div>
+          </div>
+
+          <button onclick="executeComparison()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white shadow-sm transition flex items-center justify-center space-x-2">
+            <i data-lucide="git-compare" class="h-4 w-4"></i>
+            <span>Calculate Object Deltas</span>
+          </button>
+
+          <div id="comp-results-container" class="hidden space-y-4 pt-4 border-t border-slate-100">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="text-[11px] uppercase bg-slate-50 text-slate-600 border-b border-slate-200 font-mono font-bold">
+                  <tr>
+                    <th class="py-3 px-4">Class</th>
+                    <th class="py-3 px-4">Image 1 Count</th>
+                    <th class="py-3 px-4">Image 2 Count</th>
+                    <th class="py-3 px-4">Net Change (Delta)</th>
+                  </tr>
+                </thead>
+                <tbody id="comp-table-body" class="divide-y divide-slate-100 font-mono">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── Core JavaScript Application Logic ──────────────────────── -->
+  <script>
+    let currentMode = 'single';
+    let currentTab = 'detection';
+    let currentFile = null;
+    let currentDetectionData = null;
+    let backendUrl = document.getElementById('backend-url-input').value.replace(/\/$/, '');
+
+    // Class badge color mapping
+    const badgeColors = [
+      'bg-blue-50 text-blue-700 border-blue-200',
+      'bg-purple-50 text-purple-700 border-purple-200',
+      'bg-amber-50 text-amber-700 border-amber-200',
+      'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'bg-rose-50 text-rose-700 border-rose-200',
+      'bg-indigo-50 text-indigo-700 border-indigo-200',
+    ];
+
+    function getClassBadgeColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return badgeColors[Math.abs(hash) % badgeColors.length];
+    }
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Check backend health periodically
+    async function checkHealth() {
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+      const pill = document.getElementById('backend-status-pill');
+      try {
+        const res = await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          const data = await res.json();
+          dot.className = 'h-2 w-2 rounded-full bg-emerald-500 animate-pulse';
+          pill.className = 'flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700';
+          text.innerText = `API v${data.version || '2.0.0'} Online`;
+          return true;
+        }
+      } catch (err) {}
+      dot.className = 'h-2 w-2 rounded-full bg-rose-500';
+      pill.className = 'flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700';
+      text.innerText = 'Backend Offline';
+      return false;
+    }
+    checkHealth();
+    setInterval(checkHealth, 8000);
+
+    function updateBackendUrl(val) {
+      backendUrl = val.replace(/\/$/, '');
+      checkHealth();
+    }
+
+    function updateConfidence(val) {
+      document.getElementById('conf-val').innerText = parseFloat(val).toFixed(2);
+      if (currentFile) triggerDetection();
+    }
+
+    function addClassChip(cls) {
+      const input = document.getElementById('class-filter-input');
+      const current = input.value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!current.includes(cls)) {
+        current.push(cls);
+        input.value = current.join(', ');
+        if (currentFile) triggerDetection();
+      }
+    }
+
+    function clearClassFilters() {
+      document.getElementById('class-filter-input').value = '';
+      if (currentFile) triggerDetection();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      ['single', 'batch', 'compare'].forEach(m => {
+        const btn = document.getElementById(`mode-btn-${m}`);
+        const view = document.getElementById(`view-${m}`);
+        if (m === mode) {
+          btn.className = 'mode-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 shadow-sm transition';
+          view.classList.remove('hidden');
+        } else {
+          btn.className = 'mode-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition';
+          view.classList.add('hidden');
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+
+      document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+      document.getElementById(`tab-panel-${tabId}`).classList.remove('hidden');
+
+      if (tabId === 'heatmap' && currentFile) loadHeatmap();
+      if (tabId === 'distances' && currentFile) loadDistances();
+      lucide.createIcons();
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      currentFile = file;
+
+      // Show original preview
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        document.getElementById('preview-original').src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      triggerDetection();
+    }
+
+    async function triggerDetection() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const filter = document.getElementById('class-filter-input').value;
+
+      document.getElementById('annotated-spinner').classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+      if (filter.trim()) formData.append('filter_classes', filter.trim());
+
+      try {
+        // 1. Fetch detection JSON
+        const res = await fetch(`${backendUrl}/api/v1/detect`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(await res.text());
+        currentDetectionData = await res.json();
+
+        // Update KPIs
+        document.getElementById('kpi-metrics-row').classList.remove('hidden');
+        document.getElementById('tabs-container').classList.remove('hidden');
+
+        document.getElementById('kpi-total-objects').innerText = currentDetectionData.total_objects;
+        document.getElementById('kpi-unique-classes').innerText = currentDetectionData.unique_classes;
+        document.getElementById('kpi-avg-conf').innerText = `${(currentDetectionData.average_confidence * 100).toFixed(1)}%`;
+        document.getElementById('kpi-inference-ms').innerText = `${currentDetectionData.metrics.inference_ms}ms`;
+        document.getElementById('kpi-total-ms').innerText = `${currentDetectionData.metrics.total_ms}ms`;
+
+        // Render Table
+        renderDetectionTable(currentDetectionData.detections);
+
+        // 2. Fetch Annotated Image
+        const imgRes = await fetch(`${backendUrl}/api/v1/annotated-image`, { method: 'POST', body: formData });
+        if (imgRes.ok) {
+          const blob = await imgRes.blob();
+          document.getElementById('preview-annotated').src = URL.createObjectURL(blob);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      } finally {
+        document.getElementById('annotated-spinner').classList.add('hidden');
+        lucide.createIcons();
+      }
+    }
+
+    function renderDetectionTable(detections) {
+      const tbody = document.getElementById('detection-table-body');
+      tbody.innerHTML = '';
+      document.getElementById('detection-count-pill').innerText = `${detections.length} items`;
+
+      if (detections.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 font-sans">No objects detected above threshold.</td></tr>`;
+        return;
+      }
+
+      detections.forEach(d => {
+        const row = document.createElement('tr');
+        const colorClass = getClassBadgeColor(d.class_name);
+        row.className = 'hover:bg-slate-50 transition';
+        row.innerHTML = `
+          <td class="py-2.5 px-4 font-semibold text-slate-900 flex items-center space-x-2">
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${colorClass}">${d.class_name}</span>
+          </td>
+          <td class="py-2.5 px-4 text-emerald-600 font-bold">${(d.confidence * 100).toFixed(1)}%</td>
+          <td class="py-2.5 px-4 text-slate-500">[${d.box.join(', ')}]</td>
+          <td class="py-2.5 px-4 text-slate-500">(${d.normalized_centroid[0]}, ${d.normalized_centroid[1]})</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function loadHeatmap() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/heatmap`, { method: 'POST', body: formData });
+        if (res.ok) {
+          const blob = await res.blob();
+          document.getElementById('preview-heatmap').src = URL.createObjectURL(blob);
+        }
+      } catch (e) {}
+    }
+
+    async function loadDistances() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/distances`, { method: 'POST', body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          const container = document.getElementById('distances-container');
+          container.innerHTML = '';
+          if (!data.distances || data.distances.length === 0) {
+            container.innerHTML = `<p class="col-span-3 text-xs text-slate-500 py-6 text-center font-sans">Need at least two detected objects for pairwise distance estimation.</p>`;
+            return;
+          }
+          data.distances.forEach(d => {
+            const badgeColor = d.proximity === 'Very Close' ? 'bg-rose-50 text-rose-700 border-rose-200' : d.proximity === 'Close' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            const card = document.createElement('div');
+            card.className = 'p-4 rounded-xl bg-slate-50/70 border border-slate-200 space-y-2';
+            card.innerHTML = `
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-900">${d.obj1} ↔ ${d.obj2}</span>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${badgeColor}">${d.proximity}</span>
+              </div>
+              <div class="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span>Normalized Dist: <b>${d.distance}</b></span>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function fetchSceneDescription() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const btn = document.getElementById('btn-gen-scene');
+      const box = document.getElementById('scene-desc-content');
+
+      btn.disabled = true;
+      btn.innerText = 'Analyzing with Gemini...';
+      box.innerHTML = `<span class="animate-pulse text-indigo-600 font-semibold">Consulting multimodal Gemini vision model...</span>`;
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/scene-description`, { method: 'POST', body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          box.innerHTML = `<p class="font-sans leading-relaxed text-slate-800">${data.description.replace(/\n/g, '<br/>')}</p>`;
+        } else {
+          box.innerText = `Error: ${await res.text()}`;
+        }
+      } catch (err) {
+        box.innerText = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play" class="h-3.5 w-3.5"></i><span>Analyze Scene</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    async function fetchRiskAssessment() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const btn = document.getElementById('btn-gen-risk');
+      const container = document.getElementById('risk-content');
+
+      btn.disabled = true;
+      btn.innerText = 'Auditing...';
+      container.innerHTML = `<div class="p-5 rounded-xl bg-slate-50 text-sm text-slate-600 animate-pulse font-semibold">Running Gemini public safety hazard analysis...</div>`;
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/risk-assessment`, { method: 'POST', body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          const riskColor = data.overall_risk === 'High' ? 'text-rose-700 bg-rose-50 border-rose-200' : data.overall_risk === 'Medium' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200';
+          
+          container.innerHTML = `
+            <div class="p-5 rounded-xl bg-white border border-slate-200 space-y-4 shadow-sm">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Calculated Risk Index</span>
+                <span class="px-3.5 py-1 rounded-full text-xs font-bold uppercase border ${riskColor}">${data.overall_risk} Risk</span>
+              </div>
+              <div class="space-y-2">
+                <p class="text-xs font-bold text-slate-900 uppercase tracking-wider">Identified Environmental Hazards</p>
+                <div class="space-y-1.5">${data.key_risks.map(r => `<p class="text-xs text-slate-700 flex items-start space-x-2 bg-rose-50/50 p-2 rounded-lg border border-rose-100"><span class="text-rose-600 font-bold">⚠️</span><span>${r}</span></p>`).join('')}</div>
+              </div>
+              <div class="space-y-2 pt-2 border-t border-slate-100">
+                <p class="text-xs font-bold text-slate-900 uppercase tracking-wider">Mitigation Recommendations</p>
+                <div class="space-y-1.5">${data.recommendations.map(rec => `<p class="text-xs text-slate-700 flex items-start space-x-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100"><span class="text-emerald-600 font-bold">✅</span><span>${rec}</span></p>`).join('')}</div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        container.innerText = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play" class="h-3.5 w-3.5"></i><span>Run Safety Audit</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    async function submitQA() {
+      const q = document.getElementById('qa-input').value.trim();
+      if (!q || !currentFile) return;
+
+      const btn = document.getElementById('btn-submit-qa');
+      const box = document.getElementById('qa-answer-box');
+      btn.disabled = true;
+      box.classList.remove('hidden');
+      box.innerHTML = `<span class="animate-pulse text-indigo-600 font-semibold">Consulting Gemini visual perception model...</span>`;
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('question', q);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/v1/qa`, { method: 'POST', body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          box.innerHTML = `<p class="font-sans leading-relaxed text-slate-800"><b>A:</b> ${data.answer}</p>`;
+        }
+      } catch (e) {
+        box.innerText = `Error: ${e.message}`;
+      } finally {
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function downloadPDF() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+      formData.append('include_scene_desc', 'true');
+      formData.append('include_risk_assess', 'true');
+
+      const res = await fetch(`${backendUrl}/api/v1/export/pdf`, { method: 'POST', body: formData });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "image_analysis_report.pdf";
+        a.click();
+      }
+    }
+
+    async function downloadJSON() {
+      if (!currentFile) return;
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      formData.append('file', currentFile);
+      formData.append('confidence_threshold', conf);
+      formData.append('include_scene_desc', 'true');
+      formData.append('include_risk_assess', 'true');
+
+      const res = await fetch(`${backendUrl}/api/v1/export/json`, { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "image_analysis_audit.json";
+        a.click();
+      }
+    }
+
+    // ── Batch & Compare Handlers ────────────────────────────────
+    let batchFiles = [];
+    function handleBatchSelect(e) {
+      batchFiles = Array.from(e.target.files);
+      document.getElementById('batch-count-text').innerText = `${batchFiles.length} images selected`;
+    }
+
+    async function executeBatchDetection() {
+      if (batchFiles.length === 0) return alert('Select at least one image.');
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      batchFiles.forEach(f => formData.append('files', f));
+      formData.append('confidence_threshold', conf);
+
+      const res = await fetch(`${backendUrl}/api/v1/detect/batch`, { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('batch-results-container').classList.remove('hidden');
+        document.getElementById('batch-summary-time').innerText = `${data.total_processing_time_ms}ms total`;
+        const tbody = document.getElementById('batch-table-body');
+        tbody.innerHTML = '';
+        data.results.forEach(r => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="py-2.5 px-4 font-semibold text-slate-900">${r.filename}</td>
+            <td class="py-2.5 px-4 text-blue-600 font-bold">${r.total_objects}</td>
+            <td class="py-2.5 px-4 text-slate-600">${r.unique_classes}</td>
+            <td class="py-2.5 px-4 text-emerald-600 font-bold">${(r.average_confidence * 100).toFixed(1)}%</td>
+            <td class="py-2.5 px-4 text-amber-600 font-bold">${r.metrics.inference_ms}ms</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+    }
+
+    function previewComp(e, targetId) {
+      const f = e.target.files[0];
+      if (f) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = document.getElementById(targetId);
+          img.src = evt.target.result;
+          img.classList.remove('hidden');
+        };
+        reader.readAsDataURL(f);
+      }
+    }
+
+    async function executeComparison() {
+      const f1 = document.getElementById('comp-file-1').files[0];
+      const f2 = document.getElementById('comp-file-2').files[0];
+      if (!f1 || !f2) return alert('Upload both images to compare.');
+
+      const conf = document.getElementById('conf-slider').value;
+      const formData = new FormData();
+      formData.append('file1', f1);
+      formData.append('file2', f2);
+      formData.append('confidence_threshold', conf);
+
+      const res = await fetch(`${backendUrl}/api/v1/compare`, { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('comp-results-container').classList.remove('hidden');
+        const tbody = document.getElementById('comp-table-body');
+        tbody.innerHTML = '';
+        data.changes.forEach(c => {
+          const deltaColor = c.change > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : c.change < 0 ? 'text-rose-700 bg-rose-50 border-rose-200' : 'text-slate-600 bg-slate-100 border-slate-200';
+          const deltaSign = c.change > 0 ? `+${c.change}` : c.change;
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="py-2.5 px-4 font-semibold text-slate-900">${c.object}</td>
+            <td class="py-2.5 px-4 text-slate-600 font-mono">${c.image1_count}</td>
+            <td class="py-2.5 px-4 text-slate-600 font-mono">${c.image2_count}</td>
+            <td class="py-2.5 px-4 font-mono"><span class="px-2 py-0.5 rounded border text-xs font-bold ${deltaColor}">${deltaSign}</span></td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
