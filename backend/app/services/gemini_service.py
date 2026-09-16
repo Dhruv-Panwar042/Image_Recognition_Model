@@ -27,23 +27,41 @@ class GeminiService:
         return self._client
 
     def _generate(self, prompt: str, image_bytes: bytes) -> str:
-        """Helper to invoke Gemini multimodal vision model."""
+        """Helper to invoke Gemini multimodal vision model with automatic multi-model fallback."""
         base64_img = base64.b64encode(image_bytes).decode("utf-8")
-        response = self.client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=[{
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": base64_img,
-                        }
-                    },
-                ]
-            }],
-        )
-        return response.text or ""
+        
+        # Priority fallback chain: configured model -> lite latest -> flash latest -> 2.5 flash
+        candidate_models = [settings.GEMINI_MODEL, "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.5-flash"]
+        candidate_models = list(dict.fromkeys(candidate_models))
+
+        last_error = None
+        for model_name in candidate_models:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=[{
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": base64_img,
+                                }
+                            },
+                        ]
+                    }],
+                )
+                if response.text:
+                    return response.text
+            except Exception as e:
+                err_str = str(e)
+                last_error = e
+                # On 429 (quota), 503 (high demand), or 404, fall back to next model
+                if any(code in err_str for code in ["429", "RESOURCE_EXHAUSTED", "503", "404", "quota"]):
+                    continue
+                raise e
+
+        raise last_error or RuntimeError("All Gemini model candidates exhausted.")
 
     def get_scene_description(self, image_bytes: bytes, objects_summary: str) -> SceneDescriptionResponse:
         """Generates contextual natural language description of the scene."""
