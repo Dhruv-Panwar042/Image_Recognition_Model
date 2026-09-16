@@ -1,14 +1,20 @@
-# 🔍 Intelligent Image Analysis System (v2.0 Decoupled Microservice)
+# 🔍 VisionMind AI — Intelligent Image Analysis System (v2.0)
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![YOLOv8](https://img.shields.io/badge/Vision-YOLOv8-00599C?style=flat)](https://ultralytics.com)
-[![Google Gemini](https://img.shields.io/badge/Multimodal-Gemini_2.5_Flash-4285F4?style=flat&logo=google)](https://ai.google.dev)
+[![YOLOv8](https://img.shields.io/badge/Vision-YOLOv8n-00599C?style=flat)](https://ultralytics.com)
+[![Google Gemini](https://img.shields.io/badge/Multimodal-Gemini_Flash_Fleet-4285F4?style=flat&logo=google)](https://ai.google.dev)
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![Live Deployment](https://img.shields.io/badge/Live_Cloud-Render_Online-46E3B7?style=flat&logo=render&logoColor=white)](https://image-recognition-model-9l2e.onrender.com)
 
-An enterprise-grade, decoupled computer vision and multimodal intelligence system. Combines **YOLOv8 Nano** for real-time edge/CPU object detection with **Google Gemini 2.5 Flash** for natural language scene understanding, public safety risk assessment, and spatial reasoning.
+An enterprise-grade, decoupled computer vision and multimodal intelligence system. Combines **YOLOv8 Nano** for real-time edge/CPU object detection with **Google Gemini Multimodal Resiliency Fleet** for natural language scene understanding, public safety risk assessment, and spatial proximity reasoning.
 
-Architected with a **production-ready FastAPI REST API backend** and an **independent lightweight frontend client**, featuring automatic Swagger documentation, SLA latency profiling, target class filtering, batch detection, and dual-format (PDF & JSON) data export.
+Architected with a **production-ready FastAPI REST API backend** serving an **integrated modern light dashboard UI**, featuring automatic Swagger documentation, SLA latency profiling, client-side canvas downscaling, multi-model quota fallback, and dual-format (PDF & JSON) data export.
+
+---
+
+### 🌐 Live Production Deployment
+* **Live Interactive Dashboard**: [https://image-recognition-model-9l2e.onrender.com](https://image-recognition-model-9l2e.onrender.com)
+* **Interactive OpenAPI/Swagger Docs**: [https://image-recognition-model-9l2e.onrender.com/docs](https://image-recognition-model-9l2e.onrender.com/docs)
 
 ---
 
