@@ -169,7 +169,7 @@
       <!-- Backend Endpoint Config -->
       <div class="pt-4 border-t border-slate-200 space-y-2">
         <label class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Backend Server</label>
-        <input id="backend-url-input" type="text" value="http://127.0.0.1:8000" onchange="updateBackendUrl(this.value)"
+        <input id="backend-url-input" type="text" value="" placeholder="Auto-detecting server..." onchange="updateBackendUrl(this.value)"
                class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
         <p class="text-[11px] text-slate-500 leading-tight">Decoupled REST API communication over HTTP JSON.</p>
       </div>
@@ -566,7 +566,16 @@
     let currentTab = 'detection';
     let currentFile = null;
     let currentDetectionData = null;
-    let backendUrl = document.getElementById('backend-url-input').value.replace(/\/$/, '');
+
+    // Auto-detect current host (handles both local http://127.0.0.1:8000 and cloud https://... deployments)
+    const detectedOrigin = (window.location.origin && window.location.origin.startsWith('http'))
+      ? window.location.origin
+      : 'http://127.0.0.1:8000';
+    const backendInput = document.getElementById('backend-url-input');
+    if (backendInput && !backendInput.value) {
+      backendInput.value = detectedOrigin;
+    }
+    let backendUrl = (backendInput && backendInput.value ? backendInput.value : detectedOrigin).replace(/\/$/, '');
 
     // Class badge color mapping
     const badgeColors = [
