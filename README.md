@@ -137,7 +137,7 @@ streamlit run frontend/app.py
      - `PORT`: `8000`
    - In **Settings** -> **Networking**, click **Generate Domain** (e.g. `https://vision-backend-production.up.railway.app`).
 4. **Deploy Frontend Service:**
-   - In the same project, click **+ New** -> **GitHub Repo** -> choose `Image_Recognition_Model`.
+   - In the same project, click **+ New** -> **GitHub Repo** -> choose `VisionMind-AI`.
    - Set **Dockerfile Path** to `frontend/Dockerfile`.
    - In **Variables**, add:
      - `BACKEND_URL`: `https://vision-backend-production.up.railway.app`
@@ -146,7 +146,7 @@ streamlit run frontend/app.py
 ### Option 2: Deploy to Render via Blueprint (`render.yaml`)
 1. Log in to [Render.com](https://render.com).
 2. Go to **Blueprints** -> **New Blueprint Instance**.
-3. Connect your `Image_Recognition_Model` repository. Render will automatically configure both services using `render.yaml`.
+3. Connect your `VisionMind-AI` repository. Render will automatically configure both services using `render.yaml`.
 4. Enter your `GOOGLE_API_KEY` when prompted.
 
 ---
