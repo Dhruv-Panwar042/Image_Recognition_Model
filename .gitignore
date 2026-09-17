@@ -1,8 +1,25 @@
-venv/ 
-.env 
-.streamlit/secrets.toml 
-__pycache__/ 
-*.pyc 
-*.jpg 
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment Variables & Secrets
+.env
+.streamlit/secrets.toml
+
+# Python & Testing
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Jupyter Checkpoints
+.ipynb_checkpoints/
+
+# Large Model Weights & Generated Artifacts
+yolov8n.pt
+scratch/
+Dhruv_Panwar_Resume.pdf
+*.jpg
 *.jpeg
-yolov8n.pt 
+*.png 
